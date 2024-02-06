@@ -77,65 +77,83 @@ command_prefix = "."
 bot = MyBot(intents=intents, command_prefix=command_prefix)
 
 @bot.command() # основная структура команды
-async def createDSJ(ctx,*,text): # функция и перемены, * отвечает за пробелы в text
- #if ctx.author.id == 751688827373879404:
-    await ctx.reply(f'Команда {text} по вашему запросу созданна!') # Отправление сообщения при использовании команды
-    category = await ctx.guild.create_category(f'Группа {text}') # создание категории по запросу
+async def createDSJ(ctx, text): 
+    ''' Создание группы >createDSJ *number* '''
+    n = text
+    guild = ctx.guild
+    group_leader_role = await guild.create_role(name=f'Лидер № {n}')
+    group_member_role = await guild.create_role(name=f'Группа № {n}')
 
-    # Каналы в этой категории:
-    news = await category.create_text_channel(f'Новости') 
-    await category.create_text_channel(f'чат')
-    await category.create_text_channel(f'ресуры')
-    # Войс каналы:
-    await category.create_voice_channel(f'кодинг')
-    await category.create_voice_channel(f'приятные беседы')
-    
-    guild = ctx.guild # сервер на котором находится пользователь
-    nrole = await guild.create_role(name=f"{text}") # создание роли
-    await ctx.author.add_roles(nrole) # выдача роли пользователю который юзнул команду
+    await ctx.author.add_roles(group_leader_role) 
 
-    nroleFORpeople = await guild.create_role(name=f"Участник: {text}") # создание роли
- 
-    
-    
-    permCategory = discord.PermissionOverwrite( # права @everyone
-      read_messages=False  # запретить читать сообщения
-    )
-    await category.set_permissions(guild.default_role, overwrite=permCategory) # задать права категории
+    group_category_overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        group_leader_role: discord.PermissionOverwrite(read_messages=True, connect=True),
+        group_member_role: discord.PermissionOverwrite(read_messages=True, connect=True)
+    }
 
+    category = await guild.create_category(f'Группа № {n}', overwrites=group_category_overwrites)
 
-    permNews = discord.PermissionOverwrite( # ПРАВА КАНАЛА НОВОСТИ
-     send_messages=False  # запретить отправлять сообщения
-    )
-    await news.add_permissions(permNews) # задать каналу новости в категории
+    locked_channel_overwrites = group_category_overwrites
+    locked_channel_overwrites[group_member_role].update(send_messages=False)
 
+    news = await category.create_text_channel('новости', overwrites=locked_channel_overwrites)
+    await category.create_text_channel('ресурсы', overwrites=locked_channel_overwrites)
+    await category.create_text_channel('чат')
+    await category.create_voice_channel('кодинг')
+    await category.create_voice_channel('общение')
 
-
-    # Доступ к категории специально
-    permissionsCAT = discord.PermissionOverwrite(
-     read_messages = True
-    )
-    await category.set_permissions(nroleFORpeople, overwrite=permissionsCAT)
-
-
-    user = guild.get_member(ctx.author.id)
-    if user:
-        permUser = discord.PermissionOverwrite( # доступ юзеру
-          read_messages=True,
-          send_messages=True
-         )
-        await category.set_permissions(user, overwrite=permUser)
-       # pass 
-
+    await ctx.reply(f'Группа {n}: созданна по вашему запросу') 
 
 @bot.command()
-async def deleteDSJ(ctx): # удаляет категорию с каналами
- for channel in ctx.channel.category.channels: 
-  await channel.delete() 
+async def deleteDSJ(ctx, text):
+ ''' Удаление группы >deleteDSJ *number* '''
+ n = text
+ guild = ctx.guild
+ category = get(guild.categories, name=f'Группа № {n}')
+ for channel in category.channels:
+   await channel.delete()
  await category.delete()
+ await discord.utils.get(guild.roles, name=f'Лидер № {nt}').delete()
+ await discord.utils.get(guild.roles, name=f'Участник № {n}').delete()
+ await discord.utils.get(guild.roles, name=f'Группа № {n}').delete()
 
-@bot.event # ивент ошибок
-async def on_command_error(ctx,error):
-     await ctx.send(f'```{error}```')
+@bot.command()
+async def addDSJ(ctx, text, member:discord.Member ):
+ ''' Добавление участника в группу >addDSJ *number* *mention* '''
+ n = text
+ guild = ctx.guild
+ group_leader_role = get(guild.roles, name=f'Лидер № {n}')
+ group_member_role = get(guild.roles, name=f'Участник № {n}')
+ 
+ if group_leader_role in ctx.author.roles:
+     succes = await member.add_roles(group_member_role)
+     if succes:
+      await ctx.reply(f'Участник {member.mention} был добавлен в вашу группу:{n}!')
+     else:
+      await ctx.reply(f'Не удалось добавить участника в группу')
+ else:
+     await ctx.reply(f'Данной группы не существует или же вы не лидер группы')
+
+@bot.command()
+async def removeDSJ(ctx, text, member:discord.Member ):
+ ''' Удаление участника из группы >removeDSJ *number* *mention* '''
+ n = text
+ guild = ctx.guild
+ group_leader_role = get(guild.roles, name=f'Лидер № {n}')
+ group_member_role = get(guild.roles, name=f'Участник № {n}')
+ 
+ if group_leader_role in ctx.author.roles:
+     succes = await member.remove_roles(group_member_role)
+     if succes:
+      await ctx.reply(f'Участник {member.mention} был удалён из вашей группы:{n}!')
+     else:
+      await ctx.reply(f'Не удалось удалить участника из группы')
+ else:
+     await ctx.reply(f'Данной группы не существует или же вы не лидер группы')
+
+#@bot.event # ивент ошибок
+#async def on_command_error(ctx,error):
+  #   await ctx.send(f'```{error}```')
 
 bot.run(TOKEN)
