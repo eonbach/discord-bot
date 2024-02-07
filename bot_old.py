@@ -58,7 +58,7 @@ class MyBot(commands.Bot):
 
         await payload.member.add_roles(role)
 
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {payload.member}: +{role_name}')
+        print(f'{datetime.now().strftime("%Y-%j-%d %H:%M:%S")} {payload.member}: +{role_name}')
     
 
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
@@ -78,7 +78,7 @@ class MyBot(commands.Bot):
 
         await member.remove_roles(role)
 
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {member}: -{role_name}')
+        print(f'{datetime.now().strftime("%Y-%j-%d %H:%M:%S")} {member}: -{role_name}')
 
 
 intents = discord.Intents.all()
