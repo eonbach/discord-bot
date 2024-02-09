@@ -28,7 +28,7 @@ class TeamsCog(commands.Cog):
     async def _team_create_command(self, ctx, /):
 
         await ctx.guild.fetch_channels()
-        last_cat = 0
+        last_cat = 1
         for cat in ctx.guild.categories: 
             if 'Группа №' in cat.name: last_cat += 1
 
@@ -61,7 +61,7 @@ class TeamsCog(commands.Cog):
         await category.create_text_channel('『📰』новости', overwrites=locked_channel_overwrites)
         await category.create_text_channel('『📂』ресурсы', overwrites=locked_channel_overwrites)
         await category.create_text_channel('『💬』чат')
-        # await category.create_stage_channel('『🗣』Собрание')
+        await category.create_stage_channel('『🗣』Собрание')
         await category.create_voice_channel('『🗣』Общение')
     
     @is_leader()
